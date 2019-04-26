@@ -35,9 +35,27 @@ s0_buf_destroy(s0_buf_t *buf)
 {
     if (buf->data) { free(buf->data); }
 }
+
+/* Get a pointer to the start of the values in the nth channel. Doesn't check if data is NULL. */
+void *
+s0_buf_get_channel(const s0_buf_t *b, unsigned int n)
+{
+    return b->data + s0_dtype_size(b->info.dtype) * n * b->info.n_frames;
+}
+
+/*
+Get the "frameth" frame in channel "chan". This should only be used for infrequent
+querying of buffer values, more frequent manipulations should use a vectorized
+approach.
+*/
+void *
+s0_buf_get_value(const s0_buf_t *b, unsigned int chan, unsigned int frame)
+{
+    return s0_buf_get_channel(b,chan) + s0_dtype_size(b->info.dtype) * frame;
+}
     
 s0_err_t 
-s0_buf_chk_match(s0_buf_t *a, s0_buf_t *b)
+s0_buf_chk_match(const s0_buf_t *a, s0_buf_t *b)
 {
     if (a->info.dtype != b->info.dtype) {
         return s0_err_BADTYPE;
@@ -50,4 +68,16 @@ s0_buf_chk_match(s0_buf_t *a, s0_buf_t *b)
     }
     return s0_SUCCESS;
 }
-    
+
+void
+s0_buf_fprint(FILE *stream,const s0_buf_t *b)
+{
+    unsigned int chan, frame;
+    for (chan = 0; chan < b->info.n_channels; chan++) {
+        for (frame = 0; frame < b->info.n_frames; frame++) {
+            s0_dtype_fprint(stream, b->info.dtype, s0_buf_get_value(b,chan,frame));
+            fprintf(stream," ");
+        }
+        fprintf(stream,"\n");
+    }
+}

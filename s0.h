@@ -4,5 +4,6 @@
 #include "err.h"
 #include "aproc.h"
 #include "buf.h"
+#include "bbops.h"
 
 #endif /* S0_H */

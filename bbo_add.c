@@ -1,31 +1,21 @@
 #include "buf_bin_op.h"
+#include "vmath.h"
+
+s0_buf_bin_op_gen_funs(add,s0_f32);
+s0_buf_bin_op_gen_funs(add,s0_s32);
 
 /* Addition binary operation on buffers */
-static s0_buf_bin_op_interface_t interface {
-    .methods = s0_buf_bin_op_methods,
+static s0_buf_bin_op_interface_t interface = {
+    /* .methods intialized by s0_buf_bin_op_new */
     .fun_table = {
-        [s0_FLOAT32] = (union s0_buf_bin_op_fun_table) {
-            .m0_1lt_m1_n0_1lt_n1 = add_f32_m0_1lt_m1_n0_1lt_n1,
-            .m0_1lt_m1_n0_eq_n1 = add_f32_m0_1lt_m1_n0_eq_n1,
-            .m0_1lt_m1_n0_gt1_n1 = add_f32_m0_1lt_m1_n0_gt1_n1,
-            .m0_eq_m1_n0_1lt_n1 = add_f32_m0_eq_m1_n0_1lt_n1,
-            .m0_eq_m1_n0_eq_n1 = add_f32_m0_eq_m1_n0_eq_n1;,
-            .m0_eq_m1_n0_gt1_n1 = add_f32_m0_eq_m1_n0_gt1_n1,
-            .m0_gt1_m1_n0_1lt_n1 = add_f32_m0_gt1_m1_n0_1lt_n1,
-            .m0_gt1_m1_n0_eq_n1 = add_f32_m0_gt1_m1_n0_eq_n1,
-            .m0_gt1_m1_n0_gt1_n1 = add_f32_m0_gt1_m1_n0_gt1_n1,
-        },
-        [s0_INT32] = (union s0_buf_bin_op_fun_table) {
-            .m0_1lt_m1_n0_1lt_n1 = add_s32_m0_1lt_m1_n0_1lt_n1,
-            .m0_1lt_m1_n0_eq_n1 = add_s32_m0_1lt_m1_n0_eq_n1,
-            .m0_1lt_m1_n0_gt1_n1 = add_s32_m0_1lt_m1_n0_gt1_n1,
-            .m0_eq_m1_n0_1lt_n1 = add_s32_m0_eq_m1_n0_1lt_n1,
-            .m0_eq_m1_n0_eq_n1 = add_s32_m0_eq_m1_n0_eq_n1;,
-            .m0_eq_m1_n0_gt1_n1 = add_s32_m0_eq_m1_n0_gt1_n1,
-            .m0_gt1_m1_n0_1lt_n1 = add_s32_m0_gt1_m1_n0_1lt_n1,
-            .m0_gt1_m1_n0_eq_n1 = add_s32_m0_gt1_m1_n0_eq_n1,
-            .m0_gt1_m1_n0_gt1_n1 = add_s32_m0_gt1_m1_n0_gt1_n1,
-        },
+        [s0_FLOAT32] = s0_buf_bin_op_gen_fun_table(add,s0_f32),
+        [s0_INT32] = s0_buf_bin_op_gen_fun_table(add,s0_s32),
     }
 };
 
+s0_aproc_t *
+s0_bbo_add_new(s0_aproc_new_args_t *args)
+{
+    return (s0_aproc_t*)s0_buf_bin_op_new(&interface);
+}
+    

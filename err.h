@@ -18,7 +18,7 @@ typedef enum {
     /* Couldn't allocate memory */
     s0_err_BADALLOC,
     /* Bad channel combination */
-    s0_err_BADCHANCOMB
+    s0_err_BADCHANCOMB,
     /* Bad frame combination */
     s0_err_BADFRAMECOMB
 } s0_err_t;

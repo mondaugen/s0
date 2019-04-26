@@ -3,14 +3,14 @@
 
 #include "dtypes.h"
 
-/* math routines, generally vectorized */
-
-/* Set all elements to a constant value */
-void
-s0m_set_f32(s0_f32 c, s0_f32 *dest, unsigned int len);
+/* vectorized math routines */
 
 /* Add elements */
-void
-s0m_add_f32(const s0_f32 *src_a, const s0_f32 *src_b, s0_f32 *dest, unsigned int len);
+void s0_vmath_add_s0_f32_vv(s0_f32 *in0, s0_f32 *in1, s0_f32 *out, unsigned int len);
+void s0_vmath_add_s0_f32_vc(s0_f32 *in0, s0_f32 in1, s0_f32 *out, unsigned int len);
+void s0_vmath_add_s0_f32_cv(s0_f32 in0, s0_f32 *in1, s0_f32 *out, unsigned int len);
+void s0_vmath_add_s0_s32_vv(s0_s32 *in0, s0_s32 *in1, s0_s32 *out, unsigned int len);
+void s0_vmath_add_s0_s32_vc(s0_s32 *in0, s0_s32 in1, s0_s32 *out, unsigned int len);
+void s0_vmath_add_s0_s32_cv(s0_s32 in0, s0_s32 *in1, s0_s32 *out, unsigned int len);
 
 #endif /* VMATH_H */

@@ -71,9 +71,11 @@ m0 >1  m1,  n0 >1 n0
     |_|_|_|   
 */
 
-#include "aproc.h"
+#include <stdlib.h>
+#include "buf_bin_op.h"
+#include "common.h"
 
-typedef struct {
+struct buf_bin_op_t {
     s0_aproc_inst_t super;
     s0_buf_t *input_bufs[2];
     s0_buf_t *output_buf;
@@ -85,7 +87,24 @@ typedef struct {
     s0_buf_t aux_output_buf;
     /* The function that carries out the operation. */
     s0_buf_bin_op_fun op_fun;
-} buf_bin_op_t;
+};
+
+static s0_aproc_methods_t methods;
+
+buf_bin_op_t *
+s0_buf_bin_op_new(s0_buf_bin_op_interface_t *interface)
+{
+    buf_bin_op_t *ret = calloc(1,sizeof(buf_bin_op_t));
+    interface->methods = methods;
+    if (!ret) { return ret; }
+    s0_aproc_inst_init(
+        (s0_aproc_inst_t *)ret,
+        &(s0_aproc_inst_init_t) {
+            .methods = (s0_aproc_methods_t*)interface
+        }
+    );
+    return ret;
+}
 
 static s0_err_t
 set_input_buffer(s0_aproc_t *instance_, unsigned int index, s0_buf_t *buf)
@@ -108,12 +127,9 @@ static s0_err_t
 process(s0_aproc_t *instance_)
 {
     buf_bin_op_t *instance = (buf_bin_op_t*)instance_;
-    void *ptr_o = instance->output_buf->data,
-         *ptr_i0 = instance->input_bufs[0]->data,
-         *ptr_i1 = instance->input_bufs[1]->data;
-    unsigned int n_frames = instance->output_buf->n_frames,
-                 n_channels = instance->output_buf->n_channels;
-    instance->op_fun(ptr_i0,ptr_i1,ptr_o,n_frames,n_channels);
+    instance->op_fun(instance->input_bufs[0],
+                     instance->input_bufs[1],
+                     instance->output_buf);
     return s0_SUCCESS;
 }
 
@@ -121,13 +137,14 @@ process(s0_aproc_t *instance_)
 static int
 nval_func_selector (unsigned int n0, unsigned int n1)
 {
-    return 1 - (2 - (n0 == 1)) * (n0 < n1) - (2 - (n1 == 1)) * (n0 > n1);
+    return 1 - ((2 - (n0 == 1)) * (n0 < n1) - (2 - (n1 == 1)) * (n0 > n1));
 }
 
 static int
 is_outer_product(s0_buf_bin_op_fun op_fun, union s0_buf_bin_op_fun_table *fun_table)
 {
-    return (op_fun == fun_table->m0_1lt_m1_n0_gt1_n1) || (op_fun == fun_table->m0_gt1_m1_n0_1lt_n1);
+    return (op_fun == fun_table->m0_1lt_m1_n0_gt1_n1) 
+            || (op_fun == fun_table->m0_gt1_m1_n0_1lt_n1);
 }
 
 /*
@@ -170,7 +187,7 @@ initialize(s0_aproc_t *instance_, s0_aproc_init_t *args)
             in1_buf->info.n_frames),
         nchans_fun_idx = nval_func_selector(
             in0_buf->info.n_channels,
-            in1_buf->input_bufs[1]->info.n_channels);
+            in1_buf->info.n_channels);
     if ((nchans_fun_idx < 0)
         || (nchans_fun_idx >= S0_BUF_BIN_OP_N_CHAN_COMB)) {
         return s0_err_BADCHANCOMB;
@@ -183,7 +200,7 @@ initialize(s0_aproc_t *instance_, s0_aproc_init_t *args)
     union s0_buf_bin_op_fun_table *fun_table =
         &(*(s0_buf_bin_op_interface_t**)instance)->fun_table[dtype];
     instance->op_fun = fun_table->functions[nframes_fun_idx][nchans_fun_idx];
-    if (!instance->op_fun) 
+    if (!instance->op_fun) {
         /* Operator not implemented for these input types */
         return s0_err_NOTIMP;
     }
@@ -198,19 +215,21 @@ initialize(s0_aproc_t *instance_, s0_aproc_init_t *args)
         if (err != s0_SUCCESS) { return err; }
         instance->output_buf = &instance->aux_output_buf;
     } else {
-        instance->output_buf = instance->input_bufs[inplace_buf(instance->op_fun,fun_table)];
+        instance->output_buf = instance->input_bufs[inplace_buf(
+                                instance->op_fun,
+                                fun_table)];
     }
     return s0_SUCCESS;
 }
 
-void free_inst(s0_aproc_t *instance)
+void free_inst(s0_aproc_t *instance_)
 {
     buf_bin_op_t *instance = (buf_bin_op_t*)instance_;
-    s0_buf_destroy(instance->aux_output_buf);
+    s0_buf_destroy(&instance->aux_output_buf);
     free(instance);
 }
 
-s0_aproc_methods_t s0_buf_bin_op_methods = {
+static s0_aproc_methods_t methods = (s0_aproc_methods_t) {
     .set_input_buffer = set_input_buffer,
     .get_output_buffer = get_output_buffer,
     .process = process,
